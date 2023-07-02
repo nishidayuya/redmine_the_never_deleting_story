@@ -1,8 +1,15 @@
 module RedmineTheNeverDeletingStory
+  class << self
+    def deletable?(user)
+      return false
+    end
+  end
 end
 
 module RedmineTheNeverDeletingStory::IssuePatch
   def deletable?(user = User.current)
+    return super if RedmineTheNeverDeletingStory.deletable?(user)
+
     logger.debug("[rtnds] #{__FILE__}:#{__LINE__} disabled deleting Issue")
     return false
   end
@@ -10,6 +17,8 @@ end
 
 module RedmineTheNeverDeletingStory::ProjectPatch
   def deletable?(user = User.current)
+    return super if RedmineTheNeverDeletingStory.deletable?(user)
+
     logger.debug("[rtnds] #{__FILE__}:#{__LINE__} disabled deleting Project")
     return false
   end
@@ -17,6 +26,8 @@ end
 
 module RedmineTheNeverDeletingStory::UserPatch
   def own_account_deletable?
+    return super if RedmineTheNeverDeletingStory.deletable?(User.current)
+
     logger.debug("[rtnds] #{__FILE__}:#{__LINE__} disabled deleting own User")
     return false
   end
@@ -24,7 +35,8 @@ end
 
 module RedmineTheNeverDeletingStory::ApplicationControllerPatch
   def require_admin
-    if %w[users destroy] == [params[:controller], params[:action]]
+    if %w[users destroy] == [params[:controller], params[:action]] &&
+       !RedmineTheNeverDeletingStory.deletable?(User.current)
       logger.debug("[rtnds] #{__FILE__}:#{__LINE__} disabled deleting User")
       render_403
       return
