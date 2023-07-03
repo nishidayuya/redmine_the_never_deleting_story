@@ -1,0 +1,59 @@
+<h1>一時的な削除有効化</h1>
+
+<%
+users_for_select = User.active.sorted.map { |u|
+  [u.login, u.id]
+}
+%>
+
+<%=
+labelled_form_for(
+  :permission,
+  @permission,
+  url: redmine_the_never_deleting_story_permissions_path,
+  html: {id: "permission_form"},
+) do |f|
+%>
+  <div class="box tabular">
+    <p><%=
+       f.select(
+         :user_id,
+         users_for_select,
+         selected: User.current.id,
+       )
+       %></p>
+    <p><%=
+       f.select(
+         :expire_after,
+         [
+           ["30秒", 30],
+           ["1分", 1.minute],
+           ["5分", 5.minutes],
+           ["1時間", 1.hour],
+         ],
+         selected: 1.minute,
+       )
+       %></p>
+    <%= submit_tag l(:button_create) %>
+  </div>
+<% end %>
+
+<table class="list odd-even">
+  <thead>
+    <tr>
+      <th>ユーザー</th>
+      <th>許可期限</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @permissions.each do |permission| %>
+      <tr>
+        <td><%= permission.user.login %></td>
+        <td><%= format_time(permission.expires_at) %></td>
+        <td><%= link_to('Destroy', permission, method: :delete) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
