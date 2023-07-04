@@ -5,8 +5,39 @@ module RedmineTheNeverDeletingStory
     end
 
     def deletable?(user)
+      return false if full_power?
+
       allowed = RedmineTheNeverDeletingStory::Permission.where(user:).where("expires_at > ?", Time.current).exists?
       return allowed
+    end
+
+    def full_power?
+      return ENV["RTNDS_FULL_POWER"] == "1"
+    end
+  end
+end
+
+module RedmineTheNeverDeletingStory::UndefDeleteMethods
+  extend ActiveSupport::Concern
+
+  INSTANCE_METHOD_NAMES = %i[
+    delete
+    destroy
+    destroy!
+  ]
+
+  SINGLETON_METHOD_NAMES = %i[
+    delete_all
+    delete_by
+    destroy_all
+    destroy_by
+  ]
+
+  included do
+    undef_method(*INSTANCE_METHOD_NAMES)
+
+    singleton_class.class_eval do
+      undef_method(*SINGLETON_METHOD_NAMES)
     end
   end
 end
@@ -116,4 +147,10 @@ Redmine::Plugin.register :redmine_the_never_deleting_story do
   Project.prepend(RedmineTheNeverDeletingStory::ProjectPatch)
   User.prepend(RedmineTheNeverDeletingStory::UserPatch)
   ApplicationController.prepend(RedmineTheNeverDeletingStory::ApplicationControllerPatch)
+
+  if RedmineTheNeverDeletingStory.full_power?
+    Issue.include(RedmineTheNeverDeletingStory::UndefDeleteMethods)
+    Project.include(RedmineTheNeverDeletingStory::UndefDeleteMethods)
+    User.include(RedmineTheNeverDeletingStory::UndefDeleteMethods)
+  end
 end
