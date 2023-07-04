@@ -1,7 +1,7 @@
 <h1>一時的な削除有効化</h1>
 
 <%
-users_for_select = User.active.sorted.map { |u|
+users_for_select = User.active.order(:login).map { |u|
   [u.login, u.id]
 }
 %>
